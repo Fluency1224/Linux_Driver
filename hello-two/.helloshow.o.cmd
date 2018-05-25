@@ -1,0 +1,1 @@
+cmd_/home/fluency/Linux_Driver/hello-two/helloshow.o := ld -m elf_i386   -r -o /home/fluency/Linux_Driver/hello-two/helloshow.o /home/fluency/Linux_Driver/hello-two/hello.o /home/fluency/Linux_Driver/hello-two/show.o 

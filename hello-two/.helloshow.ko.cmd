@@ -1,0 +1,1 @@
+cmd_/home/fluency/Linux_Driver/hello-two/helloshow.ko := ld -r -m elf_i386 -T /usr/src/linux-headers-3.13.0-32-generic/scripts/module-common.lds --build-id  -o /home/fluency/Linux_Driver/hello-two/helloshow.ko /home/fluency/Linux_Driver/hello-two/helloshow.o /home/fluency/Linux_Driver/hello-two/helloshow.mod.o

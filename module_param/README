@@ -1,0 +1,49 @@
+#module_param
+模块传参
+module_param函数
+ * Standard types are:
+ *	byte, short, ushort, int, uint, long, ulong
+ *	charp: a character pointer
+ *	bool: a bool, values 0/1, y/n, Y/N.
+ *	invbool: the above, only sense-reversed (N = true).
+ */
+#define module_param(name, type, perm)				\
+	module_param_named(name, name, type, perm)
+	
+name:表示参数的名字;
+type:表示参数的类型;
+perm:表示参数的访问权限;
+	
+#用法
+普通加载模块
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo insmod hello.ko
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo rmmod hello 
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo dmesg 
+[21687.006203] hello_init
+[21687.006207] howmany=10 whom=kernel 
+[21702.961257] hello_exit
+[21702.961264] howmany=10 whom=kernel 
+
+传参加载模块
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo insmod hello.ko howmany=15 whom="fluency"
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo rmmod hello
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo dmesg 
+[21585.350597] hello_init
+[21585.350604] howmany=15 whom=fluency 
+[21702.961257] hello_exit
+[21702.961264] howmany=15 whom=fluency
+
+#VFS中提供的交互接口 /sys/module/hello/parameters/
+fluency@ubuntu:~/Linux_Driver/module_param$ sudo insmod hello.ko
+fluency@ubuntu:~/Linux_Driver/module_param$ lsmod 
+Module                  Size  Used by
+hello                  12623  0 
+
+fluency@ubuntu:/sys/module/hello/parameters$ ls
+howmany  whom
+fluency@ubuntu:/sys/module/hello/parameters$ sudo cat howmany 
+10
+fluency@ubuntu:/sys/module/hello/parameters$ sudo cat whom 
+kernel
+
+
