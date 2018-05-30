@@ -1,0 +1,1 @@
+cmd_/home/fluency/Linux_Driver/cdev/hello.ko := arm-linux-gnueabihf-ld -r  -T /home/fluency/sbc/am3352-sbc/src/am335x-linux-3.14.26/scripts/module-common.lds --build-id  -o /home/fluency/Linux_Driver/cdev/hello.ko /home/fluency/Linux_Driver/cdev/hello.o /home/fluency/Linux_Driver/cdev/hello.mod.o

@@ -1,0 +1,122 @@
+#CDEV 字符设备驱动
+
+#注册字符设备的编号由结构体struct char_device_struct对应
+
+static struct char_device_struct {
+	struct char_device_struct *next;       // 指向散列冲突链表中的下一个元素的指针
+	unsigned int major;                    // 主设备号
+	unsigned int baseminor;                // 起始次设备号
+	int minorct;                           // 设备编号的范围大小
+	char name[64];                         // 处理该设备编号范围内的设备驱动的名称
+	struct cdev *cdev;		               //  指向字符设备驱动程序描述符的指针
+} *chrdevs[CHRDEV_MAJOR_HASH_SIZE];
+
+#字符设备编号操作函数
+
+注册一组设备编号范围
+int register_chrdev_region(dev_t from, unsigned count, const char *name);
+from :要分配的设备编号范围的初始值(次设备号常设为0);
+Count:连续编号范围.
+name:编号相关联的设备名称. (/proc/devices);
+
+动态分配:
+int alloc_chrdev_region(dev_t *dev,unsigned int firstminor,unsigned int count,char *name);
+firstminor是请求的最小的次编号；
+count是请求的连续设备编号的总数；
+name为设备名，返回值小于0表示分配失败
+
+释放:
+Void unregist_chrdev_region(dev_t first,unsigned int count);
+调用Documentation/devices.txt中能够找到已分配的设备号．
+
+#每一个字符设备都有一个cdev结构体对应他
+
+am335x-linux-3.14.26/fs/char_dev.c
+int register_chrdev_region(dev_t from, unsigned count, const char *name)
+
+am335x-linux-3.14.26/drivers/mtd/ubi/cdev.h
+struct cdev {
+	struct kobject kobj;                   //基类
+	struct module *owner;                  //THIS
+	const struct file_operations *ops;     //操作硬件真正的函数集合
+	struct list_head list;                 //内核链表
+	dev_t dev;                             //设备号
+	unsigned int count;                    //个数
+};
+
+#字符设备操作函数
+
+am335x-linux-3.14.26/drivers/mtd/ubi/cdev.h
+cdev 两种定义初始化方式：静态的和动态的
+静态注册字符设备:
+void cdev_init(struct cdev *, const struct file_operations *);
+动态注册字符设备:
+struct cdev *cdev_alloc(void);
+释放 :
+void cdev_put(struct cdev *p);
+
+注册设备，发生在驱动模块的加载函数中:
+int cdev_add(struct cdev *, dev_t, unsigned);
+注销设备，发生在驱动模块的卸载函数中:  
+void cdev_del(struct cdev *);
+
+#操作该硬件的函数都在结构体file_operation中定义
+
+am335x-linux-3.14.26/include/linux/fs.h
+struct file_operations {
+	struct module *owner;
+	loff_t (*llseek) (struct file *, loff_t, int);
+	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+	ssize_t (*aio_read) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+	int (*iterate) (struct file *, struct dir_context *);
+	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+	int (*mmap) (struct file *, struct vm_area_struct *);
+	int (*open) (struct inode *, struct file *);
+	int (*flush) (struct file *, fl_owner_t id);
+	int (*release) (struct inode *, struct file *);
+	int (*fsync) (struct file *, loff_t, loff_t, int datasync);
+	int (*aio_fsync) (struct kiocb *, int datasync);
+	int (*fasync) (int, struct file *, int);
+	int (*lock) (struct file *, int, struct file_lock *);
+	ssize_t (*sendpage) (struct file *, struct page *, int, size_t, loff_t *, int);
+	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+	int (*check_flags)(int);
+	int (*flock) (struct file *, int, struct file_lock *);
+	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
+	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
+	int (*setlease)(struct file *, long, struct file_lock **);
+	long (*fallocate)(struct file *file, int mode, loff_t offset,
+			  loff_t len);
+	int (*show_fdinfo)(struct seq_file *m, struct file *f);
+};
+
+
+#Makefiel
+指定交叉编译工具和链接工具
+
+交叉编译驱动文件
+make CC=arm-linux-gnueabihf-gcc LD=arm-linux-gnueabihf-ld
+
+交叉编译应用层文件
+arm-linux-gnueabihf-gcc main.c 
+
+#移植
+mv hello.ko a.out /am3352开发板
+
+#加载驱动
+insmod hello.ko
+lsmod 查看已加载上的驱动
+cat /proc/devices 查看驱动设备和其主编号
+
+root@am335x-evm:/mnt/driver# lsmod
+Module                  Size  Used by
+hello                   1551  0 
+root@am335x-evm:/mnt/driver# cat /proc/devices 
+Character devices:
+244 hello
+
+
