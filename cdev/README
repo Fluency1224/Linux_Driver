@@ -31,7 +31,7 @@ Void unregist_chrdev_region(dev_t first,unsigned int count);
 
 #每一个字符设备都有一个cdev结构体对应他
 
-am335x-linux-3.14.26/fs/char_dev.c
+/am335x-linux-3.14.26/fs/char_dev.c
 int register_chrdev_region(dev_t from, unsigned count, const char *name)
 
 am335x-linux-3.14.26/drivers/mtd/ubi/cdev.h
@@ -46,7 +46,7 @@ struct cdev {
 
 #字符设备操作函数
 
-am335x-linux-3.14.26/drivers/mtd/ubi/cdev.h
+/am335x-linux-3.14.26/drivers/mtd/ubi/cdev.h
 cdev 两种定义初始化方式：静态的和动态的
 静态注册字符设备:
 void cdev_init(struct cdev *, const struct file_operations *);
@@ -62,7 +62,7 @@ void cdev_del(struct cdev *);
 
 #操作该硬件的函数都在结构体file_operation中定义
 
-am335x-linux-3.14.26/include/linux/fs.h
+/am335x-linux-3.14.26/include/linux/fs.h
 struct file_operations {
 	struct module *owner;
 	loff_t (*llseek) (struct file *, loff_t, int);
@@ -95,7 +95,7 @@ struct file_operations {
 };
 
 
-#Makefiel
+#Makefile
 指定交叉编译工具和链接工具
 
 交叉编译驱动文件
@@ -110,7 +110,8 @@ mv hello.ko a.out /am3352开发板
 #加载驱动
 insmod hello.ko
 lsmod 查看已加载上的驱动
-cat /proc/devices 查看驱动设备和其主编号
+cat /proc/devices 查看驱动设备和设备号
+(如果自己注册的设备号已被占用的话，就要换一个设备号)
 
 root@am335x-evm:/mnt/driver# lsmod
 Module                  Size  Used by
@@ -119,4 +120,34 @@ root@am335x-evm:/mnt/driver# cat /proc/devices
 Character devices:
 244 hello
 
+root@am335x-evm:/mnt/driver# ./a.out 
+open hello fail
 
+#创建设备节点（/dev/hello为设备节点，c 代表字符设备，100 为主设备号，0 次设备号）
+root@am335x-evm:/mnt/driver# mknod /dev/hello c 244 0
+root@am335x-evm:/mnt/driver# ./a.out 
+[  351.900131] hello_open
+[  351.903984] hello_release
+root@am335x-evm:/mnt/driver# rmmod hello       
+[  371.111903] hello_exit
+
+###########################################################################
+字符设备框架
+
+mknod /dev/hello c 244 0                open("/dev/hello")        应用层  
+--------------------------------------------------------------------------       
+	   |                                        |
+     inode                                     file
+	   |                                        |
+   设备号 对应下标	                          	|                  VFS
+	   |										|
+	 cdev    ——————————————————————————————  file_operations
+--------------------------------------------------------------------------
+       |
+	   硬件（LED等）                                               硬件层 
+###########################################################################
+
+mknod命令手动创建设备节点
+实际上Linux内核为我们提供了一组函数
+可以用来在模块加载的时候自动在/dev目录下创建相应设备节点
+并在卸载模块时删除该节点
